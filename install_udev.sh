@@ -14,7 +14,7 @@ if (( $EUID != 0 )); then
 fi
 
 # create udev rules file
-echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5740", MODE="666", SYMLINK+="teraranger", GROUP="dialout"' > 99-teraranger.rules
+echo 'SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5740", MODE="666", SYMLINK+="teraranger", GROUP="dialout"' > 99-teraranger.rules
 mv 99-teraranger.rules /etc/udev/rules.d/
 
 # initialize rules
