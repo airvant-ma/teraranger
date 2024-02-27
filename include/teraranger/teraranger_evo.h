@@ -26,6 +26,8 @@
 namespace teraranger
 {
 static const char ENABLE_CMD[5] = {(char)0x00, (char)0x52, (char)0x02, (char)0x01, (char)0xDF};
+static const char DISABLE_CMD[5] = {(char)0x00, (char)0x52, (char)0x02, (char)0x01, (char)0xD8};
+static const char FREQ_50HZ[5] = {(char)0x00, (char)0x52, (char)0x03, (char)0x02, (char)0xC3};
 static const char TEXT_MODE[4] = {(char)0x00, (char)0x11, (char)0x01, (char)0x45};
 static const char BINARY_MODE[4] = {(char)0x00, (char)0x11, (char)0x02, (char)0x4C};
 static const uint8_t BUFFER_SIZE = 4;
@@ -58,6 +60,8 @@ class TerarangerEvo
   private:
     const float field_of_view = 0.0349066f;
     const std::string frame_id = "base_range_";
+    bool ok = false;
+    float last_range = 0;
     sensor_msgs::Range range_msg;
 };
 }

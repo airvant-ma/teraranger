@@ -7,8 +7,7 @@ TerarangerEvo::TerarangerEvo()
 {
   // Get parameters and namespace
   ros::NodeHandle private_node_handle_("~");
-  private_node_handle_.param("portname", portname_,
-                              std::string("/dev/ttyACM0"));
+  private_node_handle_.param("portname", portname_, std::string("/dev/ttyACM0"));
   ns_ = ros::this_node::getNamespace();
   ns_ = ros::names::clean(ns_);
   ROS_INFO("node namespace: [%s]", ns_.c_str());
@@ -18,6 +17,8 @@ TerarangerEvo::TerarangerEvo()
   range_publisher_ = nh_.advertise<sensor_msgs::Range>("teraranger_evo", 2);
 
   // Serial Port init
+  try
+  {
   serial_port_.setPort(portname_);
   serial_port_.setBaudrate(SERIAL_SPEED);
   serial_port_.setParity(serial::parity_none);
@@ -27,29 +28,34 @@ TerarangerEvo::TerarangerEvo()
   serial_port_.setTimeout(to);
 
   serial_port_.open();
+  }
+  catch (serial::IOException& e)
+  {
+    ROS_ERROR("Could not open : %s ", portname_.c_str());
+    this->ok = false;
+    return;
+  }
 
   // Connect serial port
   if(!serial_port_.isOpen())
   {
     ROS_ERROR("Could not open : %s ", portname_.c_str());
-    ros::shutdown();
+    this->ok = false;
     return;
   }
 
   // Output loaded parameters to console for double checking
-  ROS_INFO("[%s] is up and running with the following parameters:",
-              ros::this_node::getName().c_str());
-  ROS_INFO("[%s] portname: %s", ros::this_node::getName().c_str(),
-              portname_.c_str());
+  ROS_INFO("[%s] is up and running with the following parameters:", ros::this_node::getName().c_str());
+  ROS_INFO("[%s] portname: %s", ros::this_node::getName().c_str(), portname_.c_str());
 
   // Set binary mode
   setMode(ENABLE_CMD, 5);
   setMode(BINARY_MODE, 4);
+  setMode(FREQ_50HZ, 5);
 
   // Initialize range message
   range_msg.field_of_view = field_of_view;
 
-//  private_node_handle_.deleteParam("sensor_type");
   private_node_handle_.getParam("sensor_type", sensor_type_);
   ROS_INFO("[%s] sensor type: %s", ros::this_node::getName().c_str(), sensor_type_.c_str());
 
@@ -58,31 +64,26 @@ TerarangerEvo::TerarangerEvo()
     range_msg.max_range = EVO_60M_MAX;
     range_msg.min_range = EVO_60M_MIN;
   }
-
-  if (sensor_type_ == "Evo_40m")
+  else if (sensor_type_ == "Evo_40m")
   {
     range_msg.max_range = EVO_40M_MAX;
     range_msg.min_range = EVO_60M_MIN;
   }
-
-  if (sensor_type_ == "Evo_15m")
+  else if (sensor_type_ == "Evo_15m")
   {
     range_msg.max_range = EVO_15M_MAX;
     range_msg.min_range = EVO_60M_MIN;
   }
-
   else if (sensor_type_ == "Evo_600Hz")
   {
     range_msg.max_range = EVO_600HZ_MAX;
     range_msg.min_range = EVO_600HZ_MIN;
   }
-
   else if (sensor_type_ == "Evo_3m")
   {
     range_msg.max_range = EVO_3M_MAX;
     range_msg.min_range = EVO_3M_MIN;
   }
-
   else if (!private_node_handle_.hasParam("sensor_type"))
   {
    ROS_INFO("No evo type set, Evo 60m by default");
@@ -100,14 +101,24 @@ TerarangerEvo::TerarangerEvo()
 
   range_msg.header.frame_id = frame_id_;
   range_msg.radiation_type = sensor_msgs::Range::INFRARED;
+
+  this->ok = true;
 }
-TerarangerEvo::~TerarangerEvo() {}
+
+TerarangerEvo::~TerarangerEvo()
+{
+  // try to stop teraranger
+  setMode(DISABLE_CMD, 5);
+  // try to close serial port
+  serial_port_.close();
+}
 
 void TerarangerEvo::setMode(const char *c, int length)
 {
   if(!serial_port_.write((uint8_t*)c, length))
   {
     ROS_ERROR("Timeout or error while writing serial");
+    this->ok = false;
   }
   serial_port_.flushOutput();
 }
@@ -144,29 +155,31 @@ void TerarangerEvo::serialDataCallback(uint8_t single_character)
 
       if(range == TOO_CLOSE_VALUE)// Too close, 255 is for short range
       {
-        final_range = -std::numeric_limits<float>::infinity();
+        final_range = 0;
       }
       else if(range == OUT_OF_RANGE_VALUE)// Out of range
       {
-        final_range = std::numeric_limits<float>::infinity();
+        final_range = range_msg.max_range;
       }
       else if(range == INVALID_MEASURE)// Cannot measure
       {
-        final_range = std::numeric_limits<float>::quiet_NaN();
+        final_range = last_range;
       }
       // Enforcing min and max range
       else if(float_range > range_msg.max_range)
       {
-        final_range = std::numeric_limits<float>::infinity();
+        final_range = range_msg.max_range;
       }
       else if(float_range < range_msg.min_range)
       {
-        final_range = -std::numeric_limits<float>::infinity();
+        final_range = range_msg.min_range;
       }
       else
       {
         final_range = float_range;
       }
+
+      last_range = final_range;
 
       range_msg.header.stamp = ros::Time::now();
       range_msg.header.seq = seq_ctr++;
@@ -185,8 +198,9 @@ void TerarangerEvo::serialDataCallback(uint8_t single_character)
 
 void TerarangerEvo::spin()
 {
+  ros::Rate r(10);
   static uint8_t buffer[1];
-  while(ros::ok())
+  while(ros::ok() and this->ok)
   {
     if(serial_port_.read(buffer, 1))
     {
@@ -195,8 +209,9 @@ void TerarangerEvo::spin()
     else
     {
       ROS_ERROR("Timeout or error while reading serial");
+      this->ok = false;
     }
-    ros::spinOnce();
+    r.sleep();
   }
 }
 
