@@ -198,7 +198,7 @@ void TerarangerEvo::serialDataCallback(uint8_t single_character)
 
 void TerarangerEvo::spin()
 {
-  ros::Rate r(10);
+  ros::Rate r(50);
   static uint8_t buffer[1];
   while(ros::ok() and this->ok)
   {
