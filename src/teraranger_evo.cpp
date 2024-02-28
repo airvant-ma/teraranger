@@ -51,7 +51,7 @@ TerarangerEvo::TerarangerEvo()
   // Set binary mode
   setMode(ENABLE_CMD, 5);
   setMode(BINARY_MODE, 4);
-  setMode(FREQ_50HZ, 5);
+  // setMode(FREQ_50HZ, 5);
 
   // Initialize range message
   range_msg.field_of_view = field_of_view;
@@ -163,10 +163,10 @@ void TerarangerEvo::serialDataCallback(uint8_t single_character)
       }
       else if(range == INVALID_MEASURE)// Cannot measure
       {
-        final_range = last_range;
+        final_range = 0;
       }
       // Enforcing min and max range
-      else if(float_range > range_msg.max_range)
+      if(float_range > range_msg.max_range)
       {
         final_range = range_msg.max_range;
       }
