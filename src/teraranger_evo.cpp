@@ -155,31 +155,29 @@ void TerarangerEvo::serialDataCallback(uint8_t single_character)
 
       if(range == TOO_CLOSE_VALUE)// Too close, 255 is for short range
       {
-        final_range = 0;
+        final_range = -std::numeric_limits<float>::infinity();
       }
       else if(range == OUT_OF_RANGE_VALUE)// Out of range
       {
-        final_range = range_msg.max_range;
+        final_range = std::numeric_limits<float>::infinity();
       }
       else if(range == INVALID_MEASURE)// Cannot measure
       {
-        final_range = 0;
+        final_range = std::numeric_limits<float>::quiet_NaN();
       }
       // Enforcing min and max range
-      if(float_range > range_msg.max_range)
+      else if(float_range > range_msg.max_range)
       {
-        final_range = range_msg.max_range;
+        final_range = std::numeric_limits<float>::infinity();
       }
       else if(float_range < range_msg.min_range)
       {
-        final_range = range_msg.min_range;
+        final_range = -std::numeric_limits<float>::infinity();
       }
       else
       {
         final_range = float_range;
       }
-
-      last_range = final_range;
 
       range_msg.header.stamp = ros::Time::now();
       range_msg.header.seq = seq_ctr++;
@@ -211,7 +209,8 @@ void TerarangerEvo::spin()
       ROS_ERROR("Timeout or error while reading serial");
       this->ok = false;
     }
-    r.sleep();
+    ros::spinOnce();
+    // r.sleep();
   }
 }
 
