@@ -196,7 +196,6 @@ void TerarangerEvo::serialDataCallback(uint8_t single_character)
 
 void TerarangerEvo::spin()
 {
-  ros::Rate r(50);
   static uint8_t buffer[1];
   while(ros::ok() and this->ok)
   {
@@ -209,8 +208,6 @@ void TerarangerEvo::spin()
       ROS_ERROR("Timeout or error while reading serial");
       this->ok = false;
     }
-    ros::spinOnce();
-    // r.sleep();
   }
 }
 
