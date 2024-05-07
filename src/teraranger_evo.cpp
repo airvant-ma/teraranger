@@ -154,24 +154,29 @@ void TerarangerEvo::serialDataCallback(uint8_t single_character)
 
       if(range == TOO_CLOSE_VALUE)// Too close, 255 is for short range
       {
-        final_range = -std::numeric_limits<float>::infinity();
+        // final_range = -std::numeric_limits<float>::infinity();
+        final_range = 0.0;
       }
       else if(range == OUT_OF_RANGE_VALUE)// Out of range
       {
-        final_range = std::numeric_limits<float>::infinity();
+        // final_range = std::numeric_limits<float>::infinity();
+        final_range = range_msg.max_range;
       }
       else if(range == INVALID_MEASURE)// Cannot measure
       {
-        final_range = std::numeric_limits<float>::quiet_NaN();
+        // final_range = std::numeric_limits<float>::quiet_NaN();
+        return;
       }
       // Enforcing min and max range
       else if(float_range > range_msg.max_range)
       {
-        final_range = std::numeric_limits<float>::infinity();
+        // final_range = std::numeric_limits<float>::infinity();
+        final_range = range_msg.max_range;
       }
       else if(float_range < range_msg.min_range)
       {
-        final_range = -std::numeric_limits<float>::infinity();
+        // final_range = -std::numeric_limits<float>::infinity();
+        final_range = range_msg.min_range;
       }
       else
       {
