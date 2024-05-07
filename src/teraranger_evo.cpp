@@ -51,7 +51,6 @@ TerarangerEvo::TerarangerEvo()
   // Set binary mode
   setMode(ENABLE_CMD, 5);
   setMode(BINARY_MODE, 4);
-  // setMode(FREQ_50HZ, 5);
 
   // Initialize range message
   range_msg.field_of_view = field_of_view;
@@ -208,6 +207,7 @@ void TerarangerEvo::spin()
       ROS_ERROR("Timeout or error while reading serial");
       this->ok = false;
     }
+    ros::spinOnce();
   }
 }
 
