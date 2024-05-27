@@ -165,7 +165,8 @@ void TerarangerEvo::serialDataCallback(uint8_t single_character)
       else if(range == INVALID_MEASURE)// Cannot measure
       {
         // final_range = std::numeric_limits<float>::quiet_NaN();
-        return;
+        final_range = 0.0;
+        // return;
       }
       // Enforcing min and max range
       else if(float_range > range_msg.max_range)
